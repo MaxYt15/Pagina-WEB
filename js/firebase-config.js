@@ -9,10 +9,12 @@ const firebaseConfig = {
     measurementId: "G-9F7FJ8WN7H"
 };
 
-// Variables para exportar
-let auth;
-let db;
-let googleProvider;
+// Variables globales de Firebase
+window.firebaseServices = {
+    auth: null,
+    db: null,
+    googleProvider: null
+};
 
 // Inicializar Firebase con reintentos
 async function initFirebase(maxRetries = 3) {
@@ -35,17 +37,17 @@ async function initFirebase(maxRetries = 3) {
             }
 
             // Referencias a servicios de Firebase
-            auth = firebase.auth();
-            db = firebase.firestore();
-            googleProvider = new firebase.auth.GoogleAuthProvider();
+            window.firebaseServices.auth = firebase.auth();
+            window.firebaseServices.db = firebase.firestore();
+            window.firebaseServices.googleProvider = new firebase.auth.GoogleAuthProvider();
             
             // Configurar el proveedor de Google
-            googleProvider.setCustomParameters({
+            window.firebaseServices.googleProvider.setCustomParameters({
                 prompt: 'select_account'
             });
 
             console.log('Firebase inicializado correctamente');
-            return { auth, db, googleProvider };
+            return window.firebaseServices;
         } catch (error) {
             console.error('Error al inicializar Firebase:', error);
             if (i === maxRetries - 1) {
@@ -57,10 +59,7 @@ async function initFirebase(maxRetries = 3) {
     return null;
 }
 
-// Exportar las variables para uso global
-window.firebaseInstance = null;
-initFirebase().then(instance => {
-    window.firebaseInstance = instance;
-}).catch(error => {
+// Inicializar Firebase
+initFirebase().catch(error => {
     console.error('Error final al inicializar Firebase:', error);
 });

@@ -1,5 +1,3 @@
-// Variables de Firebase
-let auth, db, googleProvider;
 let elements;
 
 // Inicializar elementos DOM
@@ -21,19 +19,12 @@ function initElements() {
     };
 }
 
-// Función para inicializar Firebase
-function initFirebaseVars() {
-    if (window.firebaseInstance) {
-        ({ auth, db, googleProvider } = window.firebaseInstance);
-        return true;
-    }
-    return false;
-}
-
 // Función para inicializar la autenticación
 function initAuth() {
-    if (!initFirebaseVars()) {
-        console.error('Firebase no está inicializado');
+    const { auth, db, googleProvider } = window.firebaseServices;
+    
+    if (!auth || !db || !googleProvider) {
+        console.error('Los servicios de Firebase no están disponibles');
         return;
     }
 
@@ -182,6 +173,8 @@ function initProjectCards() {
 
 // Formulario de contacto
 function initContactForm() {
+    const { db } = window.firebaseServices;
+    
     elements.inputs.forEach(input => {
         input.addEventListener('focus', () => {
             input.parentNode.classList.add('focused');
@@ -196,6 +189,11 @@ function initContactForm() {
 
     elements.contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        if (!db) {
+            showStatusMessage('Error: No hay conexión con la base de datos', 'error');
+            return;
+        }
         
         const formData = new FormData(elements.contactForm);
         const messageData = {
@@ -298,14 +296,12 @@ async function init() {
     initElements();
     
     // Esperar a que Firebase esté listo
-    let firebaseInitialized = false;
     let retries = 0;
-    while (!firebaseInitialized && retries < 5) {
-        firebaseInitialized = initFirebaseVars();
-        if (!firebaseInitialized) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            retries++;
-        }
+    const maxRetries = 5;
+    
+    while (!window.firebaseServices.auth && retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        retries++;
     }
 
     // Inicializar el resto de funcionalidades
@@ -320,7 +316,7 @@ async function init() {
     initSmoothScroll();
     
     // Inicializar auth solo si Firebase está listo
-    if (firebaseInitialized) {
+    if (window.firebaseServices.auth) {
         initAuth();
     } else {
         console.error('No se pudo inicializar Firebase después de varios intentos');
