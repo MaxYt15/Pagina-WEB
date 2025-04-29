@@ -71,8 +71,17 @@ class AuthManager {
         }
     }
 
+    async confirmarContinuar() {
+        return new Promise((resolve) => {
+            const confirmar = window.confirm('¿Desea continuar con la iteración?');
+            resolve(confirmar);
+        });
+    }
+
     async handleEmailSignIn(e) {
         e.preventDefault();
+        if (!await this.confirmarContinuar()) return;
+        
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
         
@@ -85,6 +94,8 @@ class AuthManager {
     }
 
     async handleGoogleSignIn() {
+        if (!await this.confirmarContinuar()) return;
+        
         try {
             const provider = new window.firebaseServices.auth.GoogleAuthProvider();
             const result = await window.firebaseServices.auth.signInWithPopup(provider);
