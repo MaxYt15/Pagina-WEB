@@ -1,22 +1,25 @@
-// Elementos DOM - una sola declaración al inicio
-const elements = {
-    cursor: document.querySelector('.cursor'),
-    cursorFollower: document.querySelector('.cursor-follower'),
-    links: document.querySelectorAll('a'),
-    loader: document.querySelector('.loader'),
-    menuToggle: document.querySelector('.menu-toggle'),
-    navLinks: document.querySelector('.nav-links'),
-    hamburger: document.querySelector('.hamburger'),
-    projectCards: document.querySelectorAll('.project-card'),
-    contactForm: document.getElementById('contact-form'),
-    inputs: document.querySelectorAll('.form-group input, .form-group textarea'),
-    typingText: document.querySelector('.cyber-text'),
-    loginBtn: document.getElementById('loginBtn'),
-    userEmail: document.getElementById('userEmail')
-};
-
 // Variables de Firebase
 let auth, db, googleProvider;
+let elements;
+
+// Inicializar elementos DOM
+function initElements() {
+    elements = {
+        cursor: document.querySelector('.cursor'),
+        cursorFollower: document.querySelector('.cursor-follower'),
+        links: document.querySelectorAll('a'),
+        loader: document.querySelector('.loader'),
+        menuToggle: document.querySelector('.menu-toggle'),
+        navLinks: document.querySelector('.nav-links'),
+        hamburger: document.querySelector('.hamburger'),
+        projectCards: document.querySelectorAll('.project-card'),
+        contactForm: document.getElementById('contact-form'),
+        inputs: document.querySelectorAll('.form-group input, .form-group textarea'),
+        typingText: document.querySelector('.cyber-text'),
+        loginBtn: document.getElementById('loginBtn'),
+        userEmail: document.getElementById('userEmail')
+    };
+}
 
 // Función para inicializar Firebase
 function initFirebaseVars() {
@@ -290,7 +293,22 @@ function showStatusMessage(message, type = 'success') {
 }
 
 // Función principal de inicialización
-function init() {
+async function init() {
+    // Inicializar elementos DOM primero
+    initElements();
+    
+    // Esperar a que Firebase esté listo
+    let firebaseInitialized = false;
+    let retries = 0;
+    while (!firebaseInitialized && retries < 5) {
+        firebaseInitialized = initFirebaseVars();
+        if (!firebaseInitialized) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            retries++;
+        }
+    }
+
+    // Inicializar el resto de funcionalidades
     initCursor();
     initLoader();
     initScrollAnimation();
@@ -301,9 +319,12 @@ function init() {
     initTypingEffect();
     initSmoothScroll();
     
-    // Inicializar Firebase y auth al final
-    if (initFirebaseVars()) {
+    // Inicializar auth solo si Firebase está listo
+    if (firebaseInitialized) {
         initAuth();
+    } else {
+        console.error('No se pudo inicializar Firebase después de varios intentos');
+        showStatusMessage('Error al conectar con el servicio de autenticación', 'error');
     }
 }
 

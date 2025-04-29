@@ -14,25 +14,53 @@ let auth;
 let db;
 let googleProvider;
 
-// Inicializar Firebase
-function initFirebase() {
-    if (typeof firebase !== 'undefined') {
-        // Inicializar Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+// Inicializar Firebase con reintentos
+async function initFirebase(maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            if (typeof firebase === 'undefined') {
+                console.warn('Firebase no está definido, reintentando...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+            }
+
+            // Verificar si ya hay una instancia inicializada
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+
+            // Inicializar Analytics si está disponible
+            if (firebase.analytics) {
+                firebase.analytics();
+            }
+
+            // Referencias a servicios de Firebase
+            auth = firebase.auth();
+            db = firebase.firestore();
+            googleProvider = new firebase.auth.GoogleAuthProvider();
+            
+            // Configurar el proveedor de Google
+            googleProvider.setCustomParameters({
+                prompt: 'select_account'
+            });
+
+            console.log('Firebase inicializado correctamente');
+            return { auth, db, googleProvider };
+        } catch (error) {
+            console.error('Error al inicializar Firebase:', error);
+            if (i === maxRetries - 1) {
+                throw error;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
-
-        // Referencias a servicios de Firebase
-        auth = firebase.auth();
-        db = firebase.firestore();
-        googleProvider = new firebase.auth.GoogleAuthProvider();
-
-        return { auth, db, googleProvider };
-    } else {
-        console.error('Firebase no está cargado correctamente. Verifica las importaciones de scripts.');
-        return null;
     }
+    return null;
 }
 
 // Exportar las variables para uso global
-window.firebaseInstance = initFirebase();
+window.firebaseInstance = null;
+initFirebase().then(instance => {
+    window.firebaseInstance = instance;
+}).catch(error => {
+    console.error('Error final al inicializar Firebase:', error);
+});
