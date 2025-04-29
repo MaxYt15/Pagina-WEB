@@ -9,17 +9,30 @@ const firebaseConfig = {
     measurementId: "G-9F7FJ8WN7H"
 };
 
-// Asegurarse de que Firebase está disponible
-if (typeof firebase !== 'undefined') {
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
+// Variables para exportar
+let auth;
+let db;
+let googleProvider;
 
-    // Referencias a servicios de Firebase
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+// Inicializar Firebase
+function initFirebase() {
+    if (typeof firebase !== 'undefined') {
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
 
-    // Proveedor de autenticación de Google
-    const googleProvider = new firebase.auth.GoogleAuthProvider();
-} else {
-    console.error('Firebase no está cargado correctamente. Verifica las importaciones de scripts.');
+        // Referencias a servicios de Firebase
+        auth = firebase.auth();
+        db = firebase.firestore();
+        googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        return { auth, db, googleProvider };
+    } else {
+        console.error('Firebase no está cargado correctamente. Verifica las importaciones de scripts.');
+        return null;
+    }
 }
+
+// Exportar las variables para uso global
+window.firebaseInstance = initFirebase();
