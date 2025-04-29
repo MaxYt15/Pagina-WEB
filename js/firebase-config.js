@@ -50,8 +50,24 @@ class FirebaseManager {
             this.services = {
                 auth: firebase.auth(),
                 db: firebase.firestore(),
-                googleProvider: new firebase.auth.GoogleAuthProvider()
+                googleProvider: new firebase.auth.GoogleAuthProvider(),
+                timestamp: firebase.firestore.FieldValue.serverTimestamp
             };
+
+            // Configurar persistencia para mejor rendimiento offline
+            try {
+                await this.services.db.enablePersistence({
+                    synchronizeTabs: true
+                });
+            } catch (err) {
+                if (err.code === 'failed-precondition') {
+                    // Múltiples pestañas abiertas, no se puede habilitar persistencia
+                    console.warn('La persistencia de Firestore requiere una sola pestaña abierta');
+                } else if (err.code === 'unimplemented') {
+                    // El navegador no soporta persistencia
+                    console.warn('Este navegador no soporta persistencia de Firestore');
+                }
+            }
 
             // Configurar el proveedor de Google
             this.services.googleProvider.setCustomParameters({
@@ -72,6 +88,25 @@ class FirebaseManager {
             throw new Error('Firebase no ha sido inicializado. Llama a initialize() primero.');
         }
         return this.services;
+    }
+
+    // Método para verificar permisos
+    async checkPermissions(collectionName) {
+        if (!this.services?.auth.currentUser) {
+            return false;
+        }
+
+        try {
+            // Intenta hacer una operación de prueba
+            await this.services.db.collection(collectionName)
+                .where('userId', '==', this.services.auth.currentUser.uid)
+                .limit(1)
+                .get();
+            return true;
+        } catch (error) {
+            console.error('Error al verificar permisos:', error);
+            return false;
+        }
     }
 }
 

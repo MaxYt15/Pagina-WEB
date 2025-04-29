@@ -62,32 +62,43 @@ const App = {
                 const result = await this.services.auth.signInWithPopup(this.services.googleProvider);
                 const user = result.user;
                 
-                await this.services.db.collection('users').doc(user.uid).set({
-                    email: user.email,
-                    lastLogin: new Date(),
-                    name: user.displayName,
-                    photoURL: user.photoURL
-                }, { merge: true });
+                try {
+                    await this.services.db.collection('users').doc(user.uid).set({
+                        email: user.email,
+                        lastLogin: new Date(),
+                        name: user.displayName,
+                        photoURL: user.photoURL
+                    }, { merge: true });
 
-                this.showStatusMessage('¡Bienvenido! Has iniciado sesión correctamente');
+                    this.showStatusMessage('¡Bienvenido! Has iniciado sesión correctamente');
+                } catch (dbError) {
+                    console.error('Error al guardar datos de usuario:', dbError);
+                    // Aún permitimos el inicio de sesión aunque falle el guardado en la base de datos
+                    this.showStatusMessage('Sesión iniciada, pero hubo un error al guardar los datos', 'warning');
+                }
             } catch (error) {
                 console.error('Error al iniciar sesión:', error);
                 
-                // Manejar error específico de dominio no autorizado
-                if (error.code === 'auth/unauthorized-domain') {
-                    const currentDomain = window.location.hostname;
-                    this.showStatusMessage(
-                        `Error: Este dominio (${currentDomain}) no está autorizado en Firebase. ` +
-                        'Por favor, contacta al administrador para agregar el dominio a Firebase.',
-                        'error'
-                    );
-                    console.info(
-                        'Para solucionar este error, agrega el dominio actual a la lista de dominios autorizados ' +
-                        'en la consola de Firebase: Authentication > Settings > Authorized domains'
-                    );
-                } else {
-                    this.showStatusMessage('Error al iniciar sesión: ' + error.message, 'error');
+                let errorMessage = 'Error al iniciar sesión';
+                
+                switch(error.code) {
+                    case 'auth/popup-blocked':
+                        errorMessage = 'El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes para este sitio.';
+                        break;
+                    case 'auth/popup-closed-by-user':
+                        errorMessage = 'Proceso de inicio de sesión cancelado.';
+                        break;
+                    case 'auth/unauthorized-domain':
+                        errorMessage = 'Este dominio no está autorizado para iniciar sesión.';
+                        break;
+                    case 'auth/cancelled-popup-request':
+                        // Ignoramos este error ya que es normal cuando se abre más de un popup
+                        return;
+                    default:
+                        errorMessage = `Error: ${error.message}`;
                 }
+                
+                this.showStatusMessage(errorMessage, 'error');
             }
         });
 
@@ -238,6 +249,12 @@ const App = {
                 this.showStatusMessage('Error: No hay conexión con la base de datos', 'error');
                 return;
             }
+
+            // Verificar si el usuario está autenticado
+            if (!this.services.auth.currentUser) {
+                this.showStatusMessage('Debes iniciar sesión para enviar mensajes', 'error');
+                return;
+            }
             
             const formData = new FormData(this.elements.contactForm);
             const messageData = {
@@ -245,6 +262,7 @@ const App = {
                 email: formData.get('email'),
                 message: formData.get('message'),
                 timestamp: new Date(),
+                userId: this.services.auth.currentUser.uid,
                 status: 'pending'
             };
 
@@ -258,7 +276,11 @@ const App = {
                 window.open(whatsappUrl, '_blank');
             } catch (error) {
                 console.error('Error al enviar el mensaje:', error);
-                this.showStatusMessage('Error al enviar el mensaje', 'error');
+                if (error.code === 'permission-denied') {
+                    this.showStatusMessage('Error: No tienes permisos para enviar mensajes. Por favor, inicia sesión nuevamente.', 'error');
+                } else {
+                    this.showStatusMessage('Error al enviar el mensaje: ' + error.message, 'error');
+                }
             }
         });
     },
