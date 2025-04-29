@@ -193,3 +193,93 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+
+// Autenticación con Google
+const loginBtn = document.getElementById('loginBtn');
+const userEmail = document.getElementById('userEmail');
+
+// Función para mostrar mensajes de estado
+function showStatusMessage(message, type = 'success') {
+    const statusDiv = document.createElement('div');
+    statusDiv.className = `status-message ${type}`;
+    statusDiv.textContent = message;
+    document.body.appendChild(statusDiv);
+
+    setTimeout(() => {
+        statusDiv.classList.add('visible');
+    }, 100);
+
+    setTimeout(() => {
+        statusDiv.classList.remove('visible');
+        setTimeout(() => {
+            statusDiv.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Manejar el inicio de sesión con Google
+loginBtn.addEventListener('click', async () => {
+    try {
+        const result = await auth.signInWithPopup(googleProvider);
+        const user = result.user;
+        
+        // Guardar información del usuario en Firestore
+        await db.collection('users').doc(user.uid).set({
+            email: user.email,
+            lastLogin: new Date(),
+            name: user.displayName
+        }, { merge: true });
+
+        showStatusMessage('¡Bienvenido! Has iniciado sesión correctamente');
+    } catch (error) {
+        console.error('Error al iniciar sesión:', error);
+        showStatusMessage('Error al iniciar sesión', 'error');
+    }
+});
+
+// Observador del estado de autenticación
+auth.onAuthStateChanged(user => {
+    if (user) {
+        // Usuario está autenticado
+        document.body.classList.add('authenticated');
+        userEmail.textContent = user.email;
+        userEmail.classList.add('visible');
+        loginBtn.style.display = 'none';
+    } else {
+        // Usuario no está autenticado
+        document.body.classList.remove('authenticated');
+        userEmail.textContent = '';
+        userEmail.classList.remove('visible');
+        loginBtn.style.display = 'block';
+    }
+});
+
+// Manejar el envío del formulario de contacto
+contactForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(contactForm);
+    const messageData = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        message: formData.get('message'),
+        timestamp: new Date(),
+        status: 'pending'
+    };
+
+    try {
+        // Guardar el mensaje en Firestore
+        await db.collection('messages').add(messageData);
+        
+        showStatusMessage('¡Mensaje enviado correctamente!');
+        contactForm.reset();
+
+        // Enviar notificación a WhatsApp (opcional)
+        const whatsappMessage = `Nuevo mensaje de ${messageData.name} (${messageData.email}): ${messageData.message}`;
+        const whatsappUrl = `https://wa.me/51901437507?text=${encodeURIComponent(whatsappMessage)}`;
+        window.open(whatsappUrl, '_blank');
+    } catch (error) {
+        console.error('Error al enviar el mensaje:', error);
+        showStatusMessage('Error al enviar el mensaje', 'error');
+    }
+});

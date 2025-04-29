@@ -371,6 +371,103 @@ body {
     text-shadow: 0 0 10px var(--neon-primary);
 }
 
+/* Botón de WhatsApp flotante */
+.whatsapp-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: #25D366;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 35px;
+    text-decoration: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.whatsapp-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(37, 211, 102, 0.6);
+}
+
+/* Botón de login con Google */
+.login-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: 2px solid var(--neon-primary);
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background: var(--neon-primary);
+    color: var(--background-dark);
+}
+
+.login-btn i {
+    font-size: 1.2rem;
+}
+
+.user-email {
+    color: var(--neon-primary);
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.user-email.visible {
+    opacity: 1;
+}
+
+/* Estilos para usuarios autenticados */
+.authenticated .login-btn {
+    display: none;
+}
+
+.authenticated .user-email {
+    display: block;
+}
+
+/* Animación para mensajes de estado */
+.status-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 2rem;
+    border-radius: 5px;
+    background: var(--background-darker);
+    color: var(--text-color);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+}
+
+.status-message.success {
+    border: 2px solid var(--neon-tertiary);
+    box-shadow: 0 0 10px var(--neon-tertiary);
+}
+
+.status-message.error {
+    border: 2px solid #ff4444;
+    box-shadow: 0 0 10px #ff4444;
+}
+
+.status-message.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 /* Animaciones */
 @keyframes neonPulse {
     0% {

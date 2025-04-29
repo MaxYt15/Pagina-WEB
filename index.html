@@ -7,8 +7,13 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.0/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.0/ScrollToPlugin.min.js"></script>
+    <script src="js/firebase-config.js"></script>
     <script src="js/script.js" defer></script>
 </head>
 <body>
@@ -27,7 +32,7 @@
     <!-- Navegación -->
     <nav class="nav-wrapper">
         <div class="nav-content">
-            <div class="logo neon-text">NeönDark</div>
+            <div class="logo neon-text">Sunkovv</div>
             <div class="menu-toggle">
                 <div class="hamburger"></div>
             </div>
@@ -36,6 +41,10 @@
                 <li><a href="#projects" class="neon-link">Proyectos</a></li>
                 <li><a href="#about" class="neon-link">Sobre Mí</a></li>
                 <li><a href="#contact" class="neon-link">Contacto</a></li>
+                <li><button id="loginBtn" class="neon-button login-btn">
+                    <i class="fab fa-google"></i> Iniciar con Google
+                </button></li>
+                <li><span id="userEmail" class="user-email"></span></li>
             </ul>
         </div>
     </nav>
@@ -131,6 +140,13 @@
         </div>
     </section>
 
+    <!-- WhatsApp Button -->
+    <a href="https://wa.me/51901437507?text=Hola%20vengo%20de%20tu%20pagina" 
+       class="whatsapp-btn" 
+       target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
@@ -138,8 +154,11 @@
                 <a href="#" class="social-link"><i class="fab fa-github"></i></a>
                 <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
                 <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                <a href="https://wa.me/51901437507" class="social-link" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
             </div>
-            <p class="copyright neon-text">&copy; 2025 NeonDark. Todos los derechos reservados.</p>
+            <p class="copyright neon-text">&copy; 2025 Sunkovv. Todos los derechos reservados.</p>
         </div>
     </footer>
 
