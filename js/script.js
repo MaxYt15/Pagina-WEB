@@ -316,8 +316,12 @@ const App = {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', (e) => {
                 e.preventDefault();
-                const target = document.querySelector(anchor.getAttribute('href'));
+                const href = anchor.getAttribute('href');
                 
+                // Si el href es solo '#', no hacemos nada
+                if (href === '#') return;
+                
+                const target = document.querySelector(href);
                 if (target) {
                     gsap.to(window, {
                         duration: 1,

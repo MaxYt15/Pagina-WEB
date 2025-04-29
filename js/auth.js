@@ -8,16 +8,22 @@ class AuthManager {
 
     setupAuthUI() {
         const services = window.firebaseServices;
-        if (!services) return;
+        if (!services || !services.auth) {
+            console.error('Los servicios de Firebase no están disponibles');
+            return;
+        }
 
         // Configurar UI para autenticación por teléfono
-        window.recaptchaVerifier = new services.auth.RecaptchaVerifier('recaptcha-container', {
-            'size': 'normal',
-            'callback': (response) => {
-                // reCAPTCHA resuelto
-                this.enableSignInButton();
-            }
-        });
+        try {
+            window.recaptchaVerifier = new services.auth.RecaptchaVerifier('recaptcha-container', {
+                'size': 'normal',
+                'callback': (response) => {
+                    this.enableSignInButton();
+                }
+            });
+        } catch (error) {
+            console.error('Error al configurar reCAPTCHA:', error);
+        }
 
         // Manejadores de eventos para los formularios
         document.getElementById('phone-form')?.addEventListener('submit', (e) => this.handlePhoneSignIn(e));
@@ -186,3 +192,15 @@ class AuthManager {
 
 // Hacer la clase disponible globalmente
 window.AuthManager = AuthManager;
+
+// Inicializar AuthManager cuando el documento esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    // Esperar a que Firebase esté inicializado
+    window.addEventListener('firebaseInitialized', () => {
+        if (!window.firebaseServices) {
+            console.error('No se pudo inicializar Firebase');
+            return;
+        }
+        window.authManager = new AuthManager();
+    });
+});
