@@ -355,5 +355,18 @@ const App = {
     }
 };
 
+async function confirmarContinuar() {
+    return new Promise((resolve) => {
+        const respuesta = confirm("¿Desea continuar con la iteración?");
+        resolve(respuesta);
+    });
+}
+
+// Función auxiliar para esperar la confirmación
+async function esperarConfirmacion() {
+    const continuar = await confirmarContinuar();
+    return continuar;
+}
+
 // Inicializar la aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => App.initialize());
