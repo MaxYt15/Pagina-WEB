@@ -18,7 +18,6 @@ class FirebaseManager {
         if (this.initialized) return this.services;
 
         try {
-            // Configuración de Firebase (reemplaza esto con tu configuración)
             const firebaseConfig = {
                 apiKey: "AIzaSyBDJ9Ouxup0-HQn_lC3HCkj5k3HnLp2ypI",
                 authDomain: "mi-pagina-80920.firebaseapp.com",
@@ -29,10 +28,8 @@ class FirebaseManager {
                 measurementId: "G-9F7FJ8WN7H"
             };
 
-            // Inicializar Firebase
             const app = firebase.initializeApp(firebaseConfig);
             
-            // Inicializar servicios
             this.services = {
                 auth: firebase.auth(),
                 db: firebase.firestore(),
@@ -45,8 +42,8 @@ class FirebaseManager {
             // Hacer los servicios disponibles globalmente
             window.firebaseServices = this.services;
             
-            // Inicializar el AuthManager después de que Firebase esté listo
-            window.authManager = new AuthManager();
+            // Disparar evento de inicialización
+            window.dispatchEvent(new Event('firebaseInitialized'));
 
             return this.services;
         } catch (error) {
@@ -63,11 +60,16 @@ class FirebaseManager {
     }
 }
 
+// Exponer la función de inicialización globalmente
+window.initializeFirebase = async () => {
+    const manager = FirebaseManager.getInstance();
+    return await manager.initialize();
+};
+
 // Inicializar Firebase cuando el documento esté listo
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const firebaseManager = FirebaseManager.getInstance();
-        await firebaseManager.initialize();
+        await window.initializeFirebase();
     } catch (error) {
         console.error('Error al inicializar la aplicación:', error);
     }
