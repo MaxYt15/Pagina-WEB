@@ -1,4 +1,7 @@
-// Elementos DOM
+// Variables globales de Firebase
+let auth, db, googleProvider;
+
+// Elementos DOM - una sola declaración al inicio
 const elements = {
     cursor: document.querySelector('.cursor'),
     cursorFollower: document.querySelector('.cursor-follower'),
@@ -15,7 +18,7 @@ const elements = {
     userEmail: document.getElementById('userEmail')
 };
 
-// Cursor personalizado
+// Funciones de inicialización
 function initCursor() {
     document.addEventListener('mousemove', (e) => {
         elements.cursor.style.left = e.clientX + 'px';
@@ -234,54 +237,17 @@ function showStatusMessage(message, type = 'success') {
     }, 3000);
 }
 
-// Autenticación con Google
-function initAuth() {
-    elements.loginBtn.addEventListener('click', async () => {
-        try {
-            const result = await auth.signInWithPopup(googleProvider);
-            const user = result.user;
-            
-            await db.collection('users').doc(user.uid).set({
-                email: user.email,
-                lastLogin: new Date(),
-                name: user.displayName
-            }, { merge: true });
+// Inicialización de Firebase y autenticación
+window.addEventListener('load', () => {
+    if (typeof firebase !== 'undefined') {
+        auth = firebase.auth();
+        db = firebase.firestore();
+        googleProvider = new firebase.auth.GoogleAuthProvider();
+        initAuth();
+    } else {
+        console.error('Firebase no está disponible');
+    }
+});
 
-            showStatusMessage('¡Bienvenido! Has iniciado sesión correctamente');
-        } catch (error) {
-            console.error('Error al iniciar sesión:', error);
-            showStatusMessage('Error al iniciar sesión', 'error');
-        }
-    });
-
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            document.body.classList.add('authenticated');
-            elements.userEmail.textContent = user.email;
-            elements.userEmail.classList.add('visible');
-            elements.loginBtn.style.display = 'none';
-        } else {
-            document.body.classList.remove('authenticated');
-            elements.userEmail.textContent = '';
-            elements.userEmail.classList.remove('visible');
-            elements.loginBtn.style.display = 'block';
-        }
-    });
-}
-
-// Inicialización
-function init() {
-    initCursor();
-    initLoader();
-    initScrollAnimation();
-    initMobileMenu();
-    initParallax();
-    initProjectCards();
-    initContactForm();
-    initTypingEffect();
-    initSmoothScroll();
-    initAuth();
-}
-
-// Iniciar la aplicación
+// Inicializar todo excepto Firebase
 init();
