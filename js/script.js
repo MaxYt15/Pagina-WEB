@@ -1,8 +1,9 @@
-let elements;
+// Variables globales
+const elements = {};
 
 // Inicializar elementos DOM
 function initElements() {
-    elements = {
+    Object.assign(elements, {
         cursor: document.querySelector('.cursor'),
         cursorFollower: document.querySelector('.cursor-follower'),
         links: document.querySelectorAll('a'),
@@ -16,14 +17,14 @@ function initElements() {
         typingText: document.querySelector('.cyber-text'),
         loginBtn: document.getElementById('loginBtn'),
         userEmail: document.getElementById('userEmail')
-    };
+    });
 }
 
 // Función para inicializar la autenticación
 function initAuth() {
-    const { auth, db, googleProvider } = window.firebaseServices;
+    const services = window.firebaseServices;
     
-    if (!auth || !db || !googleProvider) {
+    if (!services?.auth || !services?.db || !services?.googleProvider) {
         console.error('Los servicios de Firebase no están disponibles');
         return;
     }
@@ -31,10 +32,10 @@ function initAuth() {
     // Manejar el inicio de sesión
     elements.loginBtn.addEventListener('click', async () => {
         try {
-            const result = await auth.signInWithPopup(googleProvider);
+            const result = await services.auth.signInWithPopup(services.googleProvider);
             const user = result.user;
             
-            await db.collection('users').doc(user.uid).set({
+            await services.db.collection('users').doc(user.uid).set({
                 email: user.email,
                 lastLogin: new Date(),
                 name: user.displayName,
@@ -49,7 +50,7 @@ function initAuth() {
     });
 
     // Observador del estado de autenticación
-    auth.onAuthStateChanged(user => {
+    services.auth.onAuthStateChanged(user => {
         if (user) {
             document.body.classList.add('authenticated');
             elements.userEmail.textContent = user.email;
@@ -173,7 +174,7 @@ function initProjectCards() {
 
 // Formulario de contacto
 function initContactForm() {
-    const { db } = window.firebaseServices;
+    const services = window.firebaseServices;
     
     elements.inputs.forEach(input => {
         input.addEventListener('focus', () => {
@@ -190,7 +191,7 @@ function initContactForm() {
     elements.contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        if (!db) {
+        if (!services?.db) {
             showStatusMessage('Error: No hay conexión con la base de datos', 'error');
             return;
         }
@@ -206,7 +207,7 @@ function initContactForm() {
 
         try {
             // Guardar el mensaje en Firestore
-            await db.collection('messages').add(messageData);
+            await services.db.collection('messages').add(messageData);
             
             showStatusMessage('¡Mensaje enviado correctamente!');
             elements.contactForm.reset();
@@ -299,12 +300,12 @@ async function init() {
     let retries = 0;
     const maxRetries = 5;
     
-    while (!window.firebaseServices.auth && retries < maxRetries) {
+    while (!window.firebaseServices?.auth && retries < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, 500));
         retries++;
     }
 
-    // Inicializar el resto de funcionalidades
+    // Inicializar todas las funcionalidades
     initCursor();
     initLoader();
     initScrollAnimation();
@@ -316,7 +317,7 @@ async function init() {
     initSmoothScroll();
     
     // Inicializar auth solo si Firebase está listo
-    if (window.firebaseServices.auth) {
+    if (window.firebaseServices?.auth) {
         initAuth();
     } else {
         console.error('No se pudo inicializar Firebase después de varios intentos');
