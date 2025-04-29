@@ -1,42 +1,91 @@
-// Configuración de Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyBDJ9Ouxup0-HQn_lC3HCkj5k3HnLp2ypI",
-    authDomain: "mi-pagina-80920.firebaseapp.com",
-    projectId: "mi-pagina-80920",
-    storageBucket: "mi-pagina-80920.firebasestorage.app",
-    messagingSenderId: "478583666607",
-    appId: "1:478583666607:web:d77f92c2f700e98635615a",
-    measurementId: "G-9F7FJ8WN7H"
-};
-
-// Inicializar Firebase
-(async function initializeFirebase() {
-    try {
-        // Verificar si Firebase ya está definido
-        if (typeof firebase === 'undefined') {
-            console.warn('Firebase no está disponible todavía');
-            return;
+// Clase Singleton para manejar Firebase
+class FirebaseManager {
+    static instance = null;
+    
+    constructor() {
+        if (FirebaseManager.instance) {
+            return FirebaseManager.instance;
         }
+        FirebaseManager.instance = this;
+        this.initialized = false;
+    }
 
-        // Inicializar Firebase solo si no hay instancias previas
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+    static getInstance() {
+        if (!FirebaseManager.instance) {
+            FirebaseManager.instance = new FirebaseManager();
         }
+        return FirebaseManager.instance;
+    }
 
-        // Inicializar servicios
-        window.firebaseServices = {
-            auth: firebase.auth(),
-            db: firebase.firestore(),
-            googleProvider: new firebase.auth.GoogleAuthProvider()
+    async initialize() {
+        if (this.initialized) return this.services;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDJ9Ouxup0-HQn_lC3HCkj5k3HnLp2ypI",
+            authDomain: "mi-pagina-80920.firebaseapp.com",
+            projectId: "mi-pagina-80920",
+            storageBucket: "mi-pagina-80920.firebasestorage.app",
+            messagingSenderId: "478583666607",
+            appId: "1:478583666607:web:d77f92c2f700e98635615a",
+            measurementId: "G-9F7FJ8WN7H"
         };
 
-        // Configurar el proveedor de Google
-        window.firebaseServices.googleProvider.setCustomParameters({
-            prompt: 'select_account'
-        });
+        try {
+            // Esperar a que Firebase esté disponible
+            let retries = 0;
+            while (typeof firebase === 'undefined' && retries < 5) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                retries++;
+            }
 
-        console.log('Firebase inicializado correctamente');
+            if (typeof firebase === 'undefined') {
+                throw new Error('Firebase no está disponible después de varios intentos');
+            }
+
+            // Inicializar Firebase solo si no hay instancias previas
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+
+            this.services = {
+                auth: firebase.auth(),
+                db: firebase.firestore(),
+                googleProvider: new firebase.auth.GoogleAuthProvider()
+            };
+
+            // Configurar el proveedor de Google
+            this.services.googleProvider.setCustomParameters({
+                prompt: 'select_account'
+            });
+
+            this.initialized = true;
+            console.log('Firebase inicializado correctamente');
+            return this.services;
+        } catch (error) {
+            console.error('Error al inicializar Firebase:', error);
+            throw error;
+        }
+    }
+
+    getServices() {
+        if (!this.initialized) {
+            throw new Error('Firebase no ha sido inicializado. Llama a initialize() primero.');
+        }
+        return this.services;
+    }
+}
+
+// Exportar una única instancia
+const firebaseManager = FirebaseManager.getInstance();
+
+// Inicializar Firebase y exportar los servicios globalmente de manera segura
+window.initializeFirebase = async () => {
+    try {
+        const services = await firebaseManager.initialize();
+        window.firebaseServices = services;
+        return services;
     } catch (error) {
         console.error('Error al inicializar Firebase:', error);
+        return null;
     }
-})();
+};

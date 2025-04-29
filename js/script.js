@@ -1,329 +1,318 @@
-// Variables globales
-const elements = {};
-
-// Inicializar elementos DOM
-function initElements() {
-    Object.assign(elements, {
-        cursor: document.querySelector('.cursor'),
-        cursorFollower: document.querySelector('.cursor-follower'),
-        links: document.querySelectorAll('a'),
-        loader: document.querySelector('.loader'),
-        menuToggle: document.querySelector('.menu-toggle'),
-        navLinks: document.querySelector('.nav-links'),
-        hamburger: document.querySelector('.hamburger'),
-        projectCards: document.querySelectorAll('.project-card'),
-        contactForm: document.getElementById('contact-form'),
-        inputs: document.querySelectorAll('.form-group input, .form-group textarea'),
-        typingText: document.querySelector('.cyber-text'),
-        loginBtn: document.getElementById('loginBtn'),
-        userEmail: document.getElementById('userEmail')
-    });
-}
-
-// Función para inicializar la autenticación
-function initAuth() {
-    const services = window.firebaseServices;
+// Namespace global para la aplicación
+const App = {
+    elements: {},
+    services: null,
     
-    if (!services?.auth || !services?.db || !services?.googleProvider) {
-        console.error('Los servicios de Firebase no están disponibles');
-        return;
-    }
+    async initialize() {
+        this.initElements();
+        await this.initFirebase();
+        this.initUI();
+    },
 
-    // Manejar el inicio de sesión
-    elements.loginBtn.addEventListener('click', async () => {
+    initElements() {
+        this.elements = {
+            cursor: document.querySelector('.cursor'),
+            cursorFollower: document.querySelector('.cursor-follower'),
+            links: document.querySelectorAll('a'),
+            loader: document.querySelector('.loader'),
+            menuToggle: document.querySelector('.menu-toggle'),
+            navLinks: document.querySelector('.nav-links'),
+            hamburger: document.querySelector('.hamburger'),
+            projectCards: document.querySelectorAll('.project-card'),
+            contactForm: document.getElementById('contact-form'),
+            inputs: document.querySelectorAll('.form-group input, .form-group textarea'),
+            typingText: document.querySelector('.cyber-text'),
+            loginBtn: document.getElementById('loginBtn'),
+            userEmail: document.getElementById('userEmail')
+        };
+    },
+
+    async initFirebase() {
         try {
-            const result = await services.auth.signInWithPopup(services.googleProvider);
-            const user = result.user;
-            
-            await services.db.collection('users').doc(user.uid).set({
-                email: user.email,
-                lastLogin: new Date(),
-                name: user.displayName,
-                photoURL: user.photoURL
-            }, { merge: true });
-
-            showStatusMessage('¡Bienvenido! Has iniciado sesión correctamente');
+            this.services = await window.initializeFirebase();
+            if (this.services) {
+                await this.initAuth();
+                return true;
+            }
+            throw new Error('No se pudo inicializar Firebase');
         } catch (error) {
-            console.error('Error al iniciar sesión:', error);
-            showStatusMessage('Error al iniciar sesión', 'error');
+            console.error('Error al inicializar Firebase:', error);
+            this.showStatusMessage('Error al conectar con el servicio de autenticación', 'error');
+            return false;
         }
-    });
+    },
 
-    // Observador del estado de autenticación
-    services.auth.onAuthStateChanged(user => {
-        if (user) {
-            document.body.classList.add('authenticated');
-            elements.userEmail.textContent = user.email;
-            elements.userEmail.classList.add('visible');
-            elements.loginBtn.style.display = 'none';
-        } else {
-            document.body.classList.remove('authenticated');
-            elements.userEmail.textContent = '';
-            elements.userEmail.classList.remove('visible');
-            elements.loginBtn.style.display = 'block';
-        }
-    });
-}
+    initUI() {
+        this.initCursor();
+        this.initLoader();
+        this.initScrollAnimation();
+        this.initMobileMenu();
+        this.initParallax();
+        this.initProjectCards();
+        this.initContactForm();
+        this.initTypingEffect();
+        this.initSmoothScroll();
+    },
 
-// Funciones de inicialización
-function initCursor() {
-    document.addEventListener('mousemove', (e) => {
-        elements.cursor.style.left = e.clientX + 'px';
-        elements.cursor.style.top = e.clientY + 'px';
-        
-        setTimeout(() => {
-            elements.cursorFollower.style.left = e.clientX + 'px';
-            elements.cursorFollower.style.top = e.clientY + 'px';
-        }, 100);
-    });
+    async initAuth() {
+        if (!this.services?.auth) return;
 
-    elements.links.forEach(link => {
-        link.addEventListener('mouseenter', () => {
-            elements.cursor.style.transform = 'scale(2)';
-            elements.cursorFollower.style.transform = 'scale(2)';
+        this.elements.loginBtn.addEventListener('click', async () => {
+            try {
+                const result = await this.services.auth.signInWithPopup(this.services.googleProvider);
+                const user = result.user;
+                
+                await this.services.db.collection('users').doc(user.uid).set({
+                    email: user.email,
+                    lastLogin: new Date(),
+                    name: user.displayName,
+                    photoURL: user.photoURL
+                }, { merge: true });
+
+                this.showStatusMessage('¡Bienvenido! Has iniciado sesión correctamente');
+            } catch (error) {
+                console.error('Error al iniciar sesión:', error);
+                this.showStatusMessage('Error al iniciar sesión', 'error');
+            }
         });
-        
-        link.addEventListener('mouseleave', () => {
-            elements.cursor.style.transform = 'scale(1)';
-            elements.cursorFollower.style.transform = 'scale(1)';
-        });
-    });
-}
 
-// Loader
-function initLoader() {
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            elements.loader.style.opacity = '0';
-            setTimeout(() => {
-                elements.loader.style.display = 'none';
-            }, 500);
-        }, 1500);
-    });
-}
-
-// Animación de scroll
-function initScrollAnimation() {
-    const scrollElements = document.querySelectorAll('.scroll-reveal');
-
-    const elementInView = (el, scrollOffset = 0) => {
-        const elementTop = el.getBoundingClientRect().top;
-        return (
-            elementTop <= 
-            (window.innerHeight || document.documentElement.clientHeight) * (1 - scrollOffset)
-        );
-    };
-
-    const handleScrollAnimation = () => {
-        scrollElements.forEach((el) => {
-            if (elementInView(el, 0.25)) {
-                el.classList.add('visible');
+        this.services.auth.onAuthStateChanged(user => {
+            if (user) {
+                document.body.classList.add('authenticated');
+                this.elements.userEmail.textContent = user.email;
+                this.elements.userEmail.classList.add('visible');
+                this.elements.loginBtn.style.display = 'none';
             } else {
-                el.classList.remove('visible');
+                document.body.classList.remove('authenticated');
+                this.elements.userEmail.textContent = '';
+                this.elements.userEmail.classList.remove('visible');
+                this.elements.loginBtn.style.display = 'block';
             }
         });
-    };
+    },
 
-    window.addEventListener('scroll', handleScrollAnimation);
-}
-
-// Menú móvil
-function initMobileMenu() {
-    elements.menuToggle.addEventListener('click', () => {
-        elements.navLinks.classList.toggle('active');
-        elements.hamburger.classList.toggle('active');
-    });
-}
-
-// Efecto parallax
-function initParallax() {
-    document.addEventListener('mousemove', (e) => {
-        const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
-        const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
-        
-        gsap.to('.hero-content', {
-            x: moveX,
-            y: moveY,
-            duration: 1
+    initCursor() {
+        document.addEventListener('mousemove', (e) => {
+            requestAnimationFrame(() => {
+                this.elements.cursor.style.left = e.clientX + 'px';
+                this.elements.cursor.style.top = e.clientY + 'px';
+                
+                setTimeout(() => {
+                    this.elements.cursorFollower.style.left = e.clientX + 'px';
+                    this.elements.cursorFollower.style.top = e.clientY + 'px';
+                }, 100);
+            });
         });
-    });
-}
 
-// Animación de proyectos
-function initProjectCards() {
-    elements.projectCards.forEach(card => {
-        card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+        this.elements.links.forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                this.elements.cursor.style.transform = 'scale(2)';
+                this.elements.cursorFollower.style.transform = 'scale(2)';
+            });
             
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            const rotateX = (y - centerY) / 10;
-            const rotateY = (centerX - x) / 10;
-            
-            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            link.addEventListener('mouseleave', () => {
+                this.elements.cursor.style.transform = 'scale(1)';
+                this.elements.cursorFollower.style.transform = 'scale(1)';
+            });
         });
-        
-        card.addEventListener('mouseleave', () => {
-            card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
-        });
-    });
-}
+    },
 
-// Formulario de contacto
-function initContactForm() {
-    const services = window.firebaseServices;
-    
-    elements.inputs.forEach(input => {
-        input.addEventListener('focus', () => {
-            input.parentNode.classList.add('focused');
+    initLoader() {
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                this.elements.loader.style.opacity = '0';
+                setTimeout(() => {
+                    this.elements.loader.style.display = 'none';
+                }, 500);
+            }, 1500);
         });
-        
-        input.addEventListener('blur', () => {
-            if (input.value === '') {
-                input.parentNode.classList.remove('focused');
-            }
-        });
-    });
+    },
 
-    elements.contactForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        if (!services?.db) {
-            showStatusMessage('Error: No hay conexión con la base de datos', 'error');
-            return;
-        }
-        
-        const formData = new FormData(elements.contactForm);
-        const messageData = {
-            name: formData.get('name'),
-            email: formData.get('email'),
-            message: formData.get('message'),
-            timestamp: new Date(),
-            status: 'pending'
+    initScrollAnimation() {
+        const scrollElements = document.querySelectorAll('.scroll-reveal');
+        const elementInView = (el, offset = 0) => {
+            const elementTop = el.getBoundingClientRect().top;
+            return elementTop <= (window.innerHeight || document.documentElement.clientHeight) * (1 - offset);
         };
 
-        try {
-            // Guardar el mensaje en Firestore
-            await services.db.collection('messages').add(messageData);
-            
-            showStatusMessage('¡Mensaje enviado correctamente!');
-            elements.contactForm.reset();
+        const handleScrollAnimation = () => {
+            scrollElements.forEach(el => {
+                if (elementInView(el, 0.25)) {
+                    el.classList.add('visible');
+                } else {
+                    el.classList.remove('visible');
+                }
+            });
+        };
 
-            // Enviar notificación a WhatsApp
-            const whatsappMessage = `Nuevo mensaje de ${messageData.name} (${messageData.email}): ${messageData.message}`;
-            const whatsappUrl = `https://wa.me/51901437507?text=${encodeURIComponent(whatsappMessage)}`;
-            window.open(whatsappUrl, '_blank');
-        } catch (error) {
-            console.error('Error al enviar el mensaje:', error);
-            showStatusMessage('Error al enviar el mensaje', 'error');
-        }
-    });
-}
-
-// Efecto de typing
-function initTypingEffect() {
-    if (!elements.typingText) return;
-    
-    const text = elements.typingText.textContent;
-    elements.typingText.textContent = '';
-    let charIndex = 0;
-
-    function typeText() {
-        if (charIndex < text.length) {
-            elements.typingText.textContent += text.charAt(charIndex);
-            charIndex++;
-            setTimeout(typeText, 100);
-        }
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                typeText();
-                observer.unobserve(entry.target);
-            }
+        window.addEventListener('scroll', () => {
+            requestAnimationFrame(handleScrollAnimation);
         });
-    });
+    },
 
-    observer.observe(elements.typingText);
-}
+    initMobileMenu() {
+        this.elements.menuToggle.addEventListener('click', () => {
+            this.elements.navLinks.classList.toggle('active');
+            this.elements.hamburger.classList.toggle('active');
+        });
+    },
 
-// Smooth scroll
-function initSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            
-            if (target) {
-                gsap.to(window, {
-                    duration: 1,
-                    scrollTo: {
-                        y: target,
-                        offsetY: 70
-                    },
-                    ease: "power3.inOut"
+    initParallax() {
+        let ticking = false;
+        document.addEventListener('mousemove', (e) => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+                    const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+                    
+                    gsap.to('.hero-content', {
+                        x: moveX,
+                        y: moveY,
+                        duration: 1
+                    });
+                    ticking = false;
                 });
+                ticking = true;
             }
         });
-    });
-}
+    },
 
-// Función para mostrar mensajes de estado
-function showStatusMessage(message, type = 'success') {
-    const statusDiv = document.createElement('div');
-    statusDiv.className = `status-message ${type}`;
-    statusDiv.textContent = message;
-    document.body.appendChild(statusDiv);
+    initProjectCards() {
+        this.elements.projectCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = (y - centerY) / 10;
+                const rotateY = (centerX - x) / 10;
+                
+                requestAnimationFrame(() => {
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                });
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                requestAnimationFrame(() => {
+                    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+                });
+            });
+        });
+    },
 
-    setTimeout(() => {
-        statusDiv.classList.add('visible');
-    }, 100);
+    initContactForm() {
+        this.elements.inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentNode.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', () => {
+                if (input.value === '') {
+                    input.parentNode.classList.remove('focused');
+                }
+            });
+        });
 
-    setTimeout(() => {
-        statusDiv.classList.remove('visible');
+        this.elements.contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!this.services?.db) {
+                this.showStatusMessage('Error: No hay conexión con la base de datos', 'error');
+                return;
+            }
+            
+            const formData = new FormData(this.elements.contactForm);
+            const messageData = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                message: formData.get('message'),
+                timestamp: new Date(),
+                status: 'pending'
+            };
+
+            try {
+                await this.services.db.collection('messages').add(messageData);
+                this.showStatusMessage('¡Mensaje enviado correctamente!');
+                this.elements.contactForm.reset();
+
+                const whatsappMessage = `Nuevo mensaje de ${messageData.name} (${messageData.email}): ${messageData.message}`;
+                const whatsappUrl = `https://wa.me/51901437507?text=${encodeURIComponent(whatsappMessage)}`;
+                window.open(whatsappUrl, '_blank');
+            } catch (error) {
+                console.error('Error al enviar el mensaje:', error);
+                this.showStatusMessage('Error al enviar el mensaje', 'error');
+            }
+        });
+    },
+
+    initTypingEffect() {
+        if (!this.elements.typingText) return;
+        
+        const text = this.elements.typingText.textContent;
+        this.elements.typingText.textContent = '';
+        let charIndex = 0;
+
+        const typeText = () => {
+            if (charIndex < text.length) {
+                this.elements.typingText.textContent += text.charAt(charIndex);
+                charIndex++;
+                setTimeout(typeText, 100);
+            }
+        };
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    typeText();
+                    observer.unobserve(entry.target);
+                }
+            });
+        });
+
+        observer.observe(this.elements.typingText);
+    },
+
+    initSmoothScroll() {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(anchor.getAttribute('href'));
+                
+                if (target) {
+                    gsap.to(window, {
+                        duration: 1,
+                        scrollTo: {
+                            y: target,
+                            offsetY: 70
+                        },
+                        ease: "power3.inOut"
+                    });
+                }
+            });
+        });
+    },
+
+    showStatusMessage(message, type = 'success') {
+        const statusDiv = document.createElement('div');
+        statusDiv.className = `status-message ${type}`;
+        statusDiv.textContent = message;
+        document.body.appendChild(statusDiv);
+
+        requestAnimationFrame(() => {
+            statusDiv.classList.add('visible');
+        });
+
         setTimeout(() => {
-            statusDiv.remove();
-        }, 300);
-    }, 3000);
-}
-
-// Función principal de inicialización
-async function init() {
-    // Inicializar elementos DOM primero
-    initElements();
-    
-    // Esperar a que Firebase esté listo
-    let retries = 0;
-    const maxRetries = 5;
-    
-    while (!window.firebaseServices?.auth && retries < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        retries++;
+            statusDiv.classList.remove('visible');
+            setTimeout(() => {
+                statusDiv.remove();
+            }, 300);
+        }, 3000);
     }
+};
 
-    // Inicializar todas las funcionalidades
-    initCursor();
-    initLoader();
-    initScrollAnimation();
-    initMobileMenu();
-    initParallax();
-    initProjectCards();
-    initContactForm();
-    initTypingEffect();
-    initSmoothScroll();
-    
-    // Inicializar auth solo si Firebase está listo
-    if (window.firebaseServices?.auth) {
-        initAuth();
-    } else {
-        console.error('No se pudo inicializar Firebase después de varios intentos');
-        showStatusMessage('Error al conectar con el servicio de autenticación', 'error');
-    }
-}
-
-// Esperar a que el DOM esté completamente cargado
-document.addEventListener('DOMContentLoaded', init);
+// Inicializar la aplicación cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => App.initialize());
