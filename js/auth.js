@@ -25,9 +25,15 @@ class AuthManager {
         document.getElementById('email-form')?.addEventListener('submit', (e) => this.handleEmailSignIn(e));
         document.getElementById('register-form')?.addEventListener('submit', (e) => this.handleRegistration(e));
         
+        // Configurar el botón de Google
+        document.getElementById('googleSignIn')?.addEventListener('click', () => this.handleGoogleSignIn());
+        
         // Botones de cambio de formulario
         document.querySelectorAll('[data-auth-action]').forEach(button => {
-            button.addEventListener('click', (e) => this.switchForm(e.target.dataset.authAction));
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.switchForm(e.target.dataset.authAction);
+            });
         });
 
         // Observador de estado de autenticación
@@ -61,13 +67,31 @@ class AuthManager {
 
     async handleEmailSignIn(e) {
         e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
         
         try {
             await window.firebaseServices.auth.signInWithEmailAndPassword(email, password);
         } catch (error) {
             console.error('Error al iniciar sesión:', error);
+            this.showError(error.message);
+        }
+    }
+
+    async handleGoogleSignIn() {
+        try {
+            const provider = new window.firebaseServices.auth.GoogleAuthProvider();
+            const result = await window.firebaseServices.auth.signInWithPopup(provider);
+            
+            // Guardar información del usuario
+            await window.firebaseServices.db.collection('users').doc(result.user.uid).set({
+                email: result.user.email,
+                name: result.user.displayName,
+                photoURL: result.user.photoURL,
+                lastLogin: new Date()
+            }, { merge: true });
+        } catch (error) {
+            console.error('Error al iniciar sesión con Google:', error);
             this.showError(error.message);
         }
     }
@@ -148,4 +172,17 @@ class AuthManager {
             }, 5000);
         }
     }
+
+    enableSignInButton() {
+        const phoneForm = document.getElementById('phone-form');
+        if (phoneForm) {
+            const submitButton = phoneForm.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    }
 }
+
+// Hacer la clase disponible globalmente
+window.AuthManager = AuthManager;
