@@ -72,7 +72,22 @@ const App = {
                 this.showStatusMessage('¡Bienvenido! Has iniciado sesión correctamente');
             } catch (error) {
                 console.error('Error al iniciar sesión:', error);
-                this.showStatusMessage('Error al iniciar sesión', 'error');
+                
+                // Manejar error específico de dominio no autorizado
+                if (error.code === 'auth/unauthorized-domain') {
+                    const currentDomain = window.location.hostname;
+                    this.showStatusMessage(
+                        `Error: Este dominio (${currentDomain}) no está autorizado en Firebase. ` +
+                        'Por favor, contacta al administrador para agregar el dominio a Firebase.',
+                        'error'
+                    );
+                    console.info(
+                        'Para solucionar este error, agrega el dominio actual a la lista de dominios autorizados ' +
+                        'en la consola de Firebase: Authentication > Settings > Authorized domains'
+                    );
+                } else {
+                    this.showStatusMessage('Error al iniciar sesión: ' + error.message, 'error');
+                }
             }
         });
 
